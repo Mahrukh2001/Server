@@ -155,20 +155,24 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
+
+
 const uploadCV = async (req, res) => {
   console.log("Received upload request with params:", req.params);
 
   if (!req.file) {
     return res.status(400).json({ status: 'error', message: 'No file uploaded.' });
   }
-  
-  const { userId, userTypeId } = req.params;
-  const fileName = req.file.filename;
-  
+
+  const { userTypeId } = req.params;
+  let originalFileName = req.file.filename;
+
   try {
+    // Find the user based on userTypeId only
     const user = await User.findOneAndUpdate(
-      { _id: userId, userTypeId: userTypeId, isActive: true }, // Ensure userTypeId matches how it's stored in your schema
-      { $set: { 'professionalDetails.cv': fileName } },
+      { userTypeId: userTypeId, isActive: true },
+      { $set: { 'professionalDetails.cv': originalFileName } },
       { new: true }
     );
 
@@ -176,12 +180,29 @@ const uploadCV = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'User not found' });
     }
 
-    res.status(200).json({ status: 'success', message: 'File uploaded successfully', fileName });
+    const userId = user._id; // Get userId from the found user
+    const newFileName = `${userId}-${Date.now()}.pdf`; // Generate a unique filename using userId
+    const uploadPath = path.join(__dirname, '..', 'uploads', newFileName);
+
+    // Rename the file to include userId
+    fs.rename(req.file.path, uploadPath, (err) => {
+      if (err) {
+        console.error("Error renaming file:", err);
+        return res.status(500).json({ status: 'error', message: 'File rename error.' });
+      }
+
+      // Update the file reference in user’s record
+      user.professionalDetails.cv = newFileName;
+      user.save();
+
+      res.status(200).json({ status: 'success', message: 'File uploaded successfully', fileName: newFileName });
+    });
   } catch (error) {
     console.error("Error in uploadCV:", error);
     res.status(500).json({ status: 'error', message: 'Server error. Please try again later.' });
   }
 };
+
 
 
 const downloadCV = async (req, res) => {
