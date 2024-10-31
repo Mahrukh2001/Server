@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
     match: [/^\S+@\S+\.\S+$/, 'Invalid email address'],
     unique: true,
     trim: true
-  }, // All
+  }, // All             
   password: { type: String, select: false }, // User
   code: { type: String, trim: true }, // User
   userTypeId: { type: Number, required: true }, // All
@@ -51,6 +51,7 @@ const userSchema = new mongoose.Schema({
     linkedIn: { type: String, trim: true },
     gitHub: { type: String, trim: true },
     cv: { type: String, trim: true, default: null },
+    otherDocs: { type: String, trim: true, default: null },
     expYears: { type: Number },
     prevJobs: [{
       organization: { type: String, trim: true },

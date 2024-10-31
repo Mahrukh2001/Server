@@ -7,7 +7,9 @@ const { createUser,
   updateUser,
   deleteUser,
   uploadCV,
-  downloadCV
+  downloadCV,
+  uploadOtherDocs,
+  downloadOtherDocs
 } = require('../repositories/userRepo');
 
 const router = express.Router();
@@ -21,5 +23,9 @@ router.delete('/user/:id', verifyToken, deleteUser);
 //  CV
 router.post('/user/cv/upload/:userTypeId', upload.single('pdf'), uploadCV);
 router.post('/user/cv/download', verifyToken, downloadCV);
+
+// lastDegree
+router.post('/user/otherDocs/upload/:userId/:userTypeId', authenticate, upload.single('pdf'), uploadOtherDocs);
+router.post('/user/otherDocs/download', verifyToken, downloadOtherDocs);
 
 module.exports = router;

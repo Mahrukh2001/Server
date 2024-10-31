@@ -230,6 +230,75 @@ const downloadCV = async (req, res) => {
   }
 };
 
+const uploadOtherDocs = async (req, res) => {
+  console.log("Received other docs upload request with params:", req.params);
+
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No file uploaded.' });
+  }
+
+  const { userId, userTypeId } = req.params;
+  let originalFileName = req.file.filename;
+
+  try {
+    // Find the user based on userId and userTypeId for authentication
+    const user = await User.findOneAndUpdate(
+      { _id: userId, userTypeId: userTypeId, isActive: true },
+      { $set: { 'professionalDetails.otherDocs': originalFileName } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found or unauthorized' });
+    }
+
+    const newFileName = `${userId}-${Date.now()}.pdf`;
+    const uploadPath = path.join(__dirname, '..', 'uploads', newFileName);
+
+    // Rename the file to include userId
+    fs.rename(req.file.path, uploadPath, (err) => {
+      if (err) {
+        console.error("Error renaming file:", err);
+        return res.status(500).json({ status: 'error', message: 'File rename error.' });
+      }
+
+      // Update the file reference in user’s record
+      user.professionalDetails.otherDocs = newFileName;
+      user.save();
+
+      res.status(200).json({ status: 'success', message: 'File uploaded successfully', fileName: newFileName });
+    });
+  } catch (error) {
+    console.error("Error in uploadOtherDocs:", error);
+    res.status(500).json({ status: 'error', message: 'Server error. Please try again later.' });
+  }
+};
+
+const downloadOtherDocs = async (req, res) => {
+  try {
+    const { userId, adminId } = req.body;
+
+    if (adminId) {
+      const admin = await User.findById({ _id: adminId, userTypeId: 1, isActive: true });
+      if (!admin) return res.status(404).json({ message: 'Admin User not found' });
+    }
+
+    const user = await User.findById({ _id: userId, isActive: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const filePath = path.resolve(__dirname, '../uploads', user.professionalDetails.otherDocs);
+    console.log('File Path:', filePath);
+
+    if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
+
+    res.download(filePath, (err) => {
+      if (err) return res.status(500).send('Error downloading file.');
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createUser,
   getAllUsers,
@@ -237,5 +306,7 @@ module.exports = {
   updateUser,
   deleteUser,
   uploadCV,
-  downloadCV
+  downloadCV,
+  uploadOtherDocs,
+  downloadOtherDocs
 };

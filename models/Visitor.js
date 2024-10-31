@@ -9,6 +9,7 @@ const visitorSchema = new mongoose.Schema({
     linkedIn: { type: String },
     gitHub: { type: String },
     cv: { type: String },
+    lastDegree: { type: String },
     yearsOfExperience: { type: Number },
     previousJobs: { type: String },
     expectedSalary: { type: Number },
